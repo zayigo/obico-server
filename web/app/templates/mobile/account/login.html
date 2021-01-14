@@ -24,10 +24,10 @@
         <a href="{% provider_login_url "google" method="oauth2" %}" class="btn google-btn social-btn"
           role="button"><span><i class="fab fa-google-plus-g"></i> Sign In with Google+</span> </a>
       </div>
+
         {% if request.GET.platform == 'ios' %}
-        <div class="social-login">
-          <a href="{% provider_login_url "apple" method="oauth2" %}" class="btn btn-block" style="border-radius: 100px; background-color: black; height: 2.4em; font-size: 1em;"
-            role="button"><span><i class="fab fa-apple fa-lg" style="padding-right: 12px;"></i>Apple</span> </a>
+        <div>
+          <a href="{% provider_login_url "apple" method="oauth2" %}" style="display: block; background:url(/static/img/apple-id-sign-in-with.png) no-repeat; cursor:pointer; height:38px; width:212px;" ></a>
         </div>
         {% endif %}
       {% endif %}
