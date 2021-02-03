@@ -45,16 +45,16 @@
       </div>
 
       <div class="card-img-top webcam_container">
-        <div class="slow-link-wrapper" ref="slowLinkWrapper" @click="showSlowLinkDescription();">
-          <div class="icon bg-warning">
+        <div class="slow-link-wrapper" @click="showSlowLinkDescription();">
+          <div class="icon">
             <i class="fas fa-exclamation"></i>
           </div>
-          <div class="text text-warning" ref="slowLinkText">Video frames dropped</div>
+          <div class="text">Video frames dropped</div>
         </div>
-        <div v-show="trackMuted" class="muted-status-wrapper">
-          <div class="text">Buffering...</div>
-          <a href="#" @click="showMutedStatusDescription($event)">Why did I get stuck?</a>
-        </div>
+        <div class="muted-status-wrapper">
+            <div class="text">Buffering...</div>
+            <a href="#" @click="showMutedStatusDescription($event)">Why did I get stuck?</a>
+          </div>
         <div v-if="isVideoVisible && taggedImgAvailable" class="streaming-switch">
           <button type="button" class="btn btn-sm no-corner" :class="{ active: showVideo }" @click="forceStreamingSrc('VIDEO')"><i class="fas fa-video"></i></button>
           <button type="button" class="btn btn-sm no-corner " :class="{ active: !showVideo }" @click="forceStreamingSrc('IMAGE')"><i class="fas fa-camera"></i></button>
@@ -299,7 +299,7 @@ import Janus from '@lib/janus'
 import webrtc from '@lib/webrtc_streaming'
 import Gauge from '@common/Gauge'
 import printerStockImgSrc from '@static/img/3d_printer.png'
-import loadingIconSrc from '@static/img/loading.gif'
+import loadingIconSrc from '@static/img/tail-spin-lg.svg'
 
 import { toDuration } from '@lib/printers.js'
 import { getLocalPref, setLocalPref } from '@lib/pref'
@@ -328,30 +328,8 @@ export default {
     PrinterActions,
     StatusTemp,
   },
-
   created() {
         this.webrtc = null
-  },
-
-  mounted() {
-    if (this.isProAccount) {
-      Janus.init({
-        debug: 'all',
-        callback: this.onJanusInitalized
-      })
-    }
-
-    ifvisible.on('blur', () => {
-      if (this.webrtc) {
-        this.webrtc.stopStream()
-      }
-    })
-
-    ifvisible.on('focus', () => {
-      if (this.webrtc) {
-        this.webrtc.startStream()
-      }
-    })
   },
 
   props: {
@@ -378,9 +356,7 @@ export default {
       },
       stickyStreamingSrc: null,
       isVideoVisible: false,
-      slowLinkLoss: 0,
       slowLinkAnimationTimeout: null,
-      trackMuted: true,
     }
   },
   computed: {
@@ -544,8 +520,6 @@ export default {
         onRemoteStream: this.onWebRTCRemoteStream,
         onCleanup: this.onWebRTCCleanup,
         onSlowLink: this.onSlowLink,
-        onTrackMuted: this.trackMuted = true,
-        onTrackUnmuted: this.trackMuted = false,
       })
 
       this.openWebRTCForPrinter()
@@ -567,7 +541,7 @@ export default {
       this.isVideoVisible = false
     },
 
-    /** Video warning handling */
+    /** Slow link handling */
 
     onSlowLink(loss) {
       this.slowLinkLoss += loss
@@ -593,23 +567,26 @@ export default {
     },
 
     showSlowLinkAlert() {
-      if (this.$refs.slowLinkWrapper.style.display === 'block') {
-        return
-      }
-
       const widthTransitionLen = 500 // value from css
       const hideWarningTextAFter = 3000 // configurable value
 
-      this.$refs.slowLinkWrapper.style.display = 'block'
+      const slowLinkBlock = document.querySelector('.slow-link-wrapper')
+      const slowLinkText = slowLinkBlock.querySelector('.text')
+
+      if (slowLinkBlock.style.display === 'block') {
+        return
+      }
+
+      slowLinkBlock.style.display = 'block'
 
       // Temporary show warning text
       this.slowLinkAnimationTimeout = setTimeout(() => {
-        this.$refs.slowLinkWrapper.style.width = '176px'
+        slowLinkBlock.style.width = '176px'
         this.slowLinkAnimationTimeout = setTimeout(() => {
-          this.$refs.slowLinkText.style.display = 'block'
+          slowLinkText.style.display = 'block'
           this.slowLinkAnimationTimeout = setTimeout(() => {
-            this.$refs.slowLinkText.style.display = 'none'
-            this.$refs.slowLinkWrapper.style.width = '0'
+            slowLinkText.style.display = 'none'
+            slowLinkBlock.style.width = '0'
             this.slowLinkAnimationTimeout = null
           }, hideWarningTextAFter)
         }, widthTransitionLen)
@@ -617,14 +594,30 @@ export default {
     },
 
     hideSlowLinkAlert() {
+      const slowLinkBlock = document.querySelector('.slow-link-wrapper')
+      const slowLinkText = slowLinkBlock.querySelector('.text')
+
       if (this.slowLinkAnimationTimeout) {
         console.log('clear timeout - cancel all animations')
         clearTimeout(this.slowLinkAnimationTimeout)
-        this.$refs.slowLinkText.style.display = 'none'
-        this.$refs.slowLinkWrapper.style.width = 0
+        slowLinkText.style.display = 'none'
+        slowLinkBlock.style.width = 0
       }
 
-      this.$refs.slowLinkWrapper.style.display = 'none'
+      slowLinkBlock.style.display = 'none'
+    },
+    /** End of slow link handling */
+
+    /** Muted Status handling */
+
+    showMutedStatus() {
+      const mutedStatusBlock = document.querySelector('.muted-status-wrapper')
+      mutedStatusBlock.style.display = 'block'
+    },
+
+    hideMutedStatus() {
+      const mutedStatusBlock = document.querySelector('.muted-status-wrapper')
+      mutedStatusBlock.style.display = 'none'
     },
 
     showMutedStatusDescription(event) {
@@ -633,22 +626,42 @@ export default {
       this.$swal({
         title: 'Webcam stream buffering',
         html: `
-          <p>When you see the messaging about webcam stream is "buffering" occassionaly, you can just reload the page. If this message repeatedly appears, it usually indicates a constricted video stream on <strong>your Raspberry Pi, not your computer</strong>.</p>
+          <p>When you see the messaging about webcam stream is "buffering" occassionaly, you can just reload the page. If this message repeatedly appears, it usually indicates a constricted video stream on <strong>your Raspberry Pi, not your phone</strong>.</p>
           <p>The most common reasons are:</p>
           <ul>
             <li>Camera resolution is set too high.</li>
-            <li>Camera framerate is set too high. This is only when you set <a target="_blank" href="https://www.thespaghettidetective.com/docs/streaming-compatibility-mode/">the compatibility mode</a> to "always".</li>
+            <li>Camera framerate is set too high. This is only when you set <a href="/docs/streaming-compatibility-mode/">the compatibility mode</a> to "always".</li>
             <li>The upload speed of your Raspberry Pi is too low.</li>
           </ul>
           <br>
-          <p>You should leave the compatibility mode to "auto", unless you have <a target="_blank" href="https://www.thespaghettidetective.com/docs/streaming-compatibility-mode/#are-there-situations-when-i-want-to-always-stream-in-compatibility-mode">a good reason to it to "always".</a></p>
-          <p>As a rule of thumb, for every 300k-pixel resolution (640x480), you need to have 1.5Mbps upload bandwidth to stream smoothly at 25fps. This means if you set the webcam resolution to 1024x768 (~800k pixels), you need to have 4.5Mbps upload bandwidth. Also remember that the upload bandwidth of your Raspberry Pi may not be the same as your computer, even if they are connected to the same Wi-Fi network. This is because Raspberry Pi's Wi-Fi chip is weaker than the most computers'.</p>
+          <p>You should leave the compatibility mode to "auto", unless you have <a href="/docs/streaming-compatibility-mode/#are-there-situations-when-i-want-to-always-stream-in-compatibility-mode">a good reason to it to "always".</a></p>
+          <p>As a rule of thumb, for every 300k-pixel resolution (640x480), you need to have 1.5Mbps upload bandwidth to stream smoothly at 25fps. This means if you set the webcam resolution to 1024x768 (~800k pixels), you need to have 4.5Mbps upload bandwidth. Also remember that the upload bandwidth of your Raspberry Pi may not be the same as your computer, even if they are connected to the same Wifi network. This is because Raspberry Pi's Wifi chip is weaker than the most computers'.</p>
         `,
         showCloseButton: true,
       })
     }
-    /** End of video warning handling */
+    /** End of Muted Status handling */
   },
+  mounted() {
+    if (this.isProAccount) {
+      Janus.init({
+        debug: 'all',
+        callback: this.onJanusInitalized
+      })
+    }
+
+    ifvisible.on('blur', () => {
+      if (this.webrtc) {
+        this.webrtc.stopStream()
+      }
+    })
+
+    ifvisible.on('focus', () => {
+      if (this.webrtc) {
+        this.webrtc.startStream()
+      }
+    })
+  }
 }
 </script>
 
@@ -686,6 +699,7 @@ export default {
   top: 10px
   left: 10px
   padding-left: $height
+  color: theme.$yellow
   line-height: $height
   font-size: 14px
   width: 0
@@ -703,6 +717,7 @@ export default {
     width: 20px
     height: 20px
     border-radius: 10px
+    background-color: theme.$yellow
     position: absolute
     top: 2px
     left: 2px
@@ -710,7 +725,7 @@ export default {
     line-height: 20px
     text-align: center
     color: theme.$white
-
+  
 .muted-status-wrapper
   position: absolute
   width: 100%
@@ -720,4 +735,5 @@ export default {
   background-color: rgba(0,0,0,.6)
   text-align: center
   padding: 10px 0
+  display: none
 </style>
