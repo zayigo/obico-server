@@ -41,7 +41,6 @@ function PrinterWebSocket() {
     printerSocket.onmessage = function (e) {
       var msg = JSON.parse(e.data)
       if ('passthru' in msg) {
-        console.log('on_message', Date.now(), msg)
         self.on_passThruReceived(printerId, msg)
       } else {
         onMessageReceived(msg)
@@ -71,7 +70,6 @@ function PrinterWebSocket() {
       }
       let msgObj = {passthru: msg}
       pSocket.send(JSON.stringify(msgObj))
-      console.log('WS send', Date.now(), msgObj)
       EventBus.$emit('sendOverDatachannel', printerId, msgObj)
       return msgObj
     } else {

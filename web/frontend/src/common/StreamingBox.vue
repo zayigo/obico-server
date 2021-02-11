@@ -236,7 +236,6 @@ export default {
     },
 
     onWebRTCData(jsonData) {
-      console.log('onWebRTCData', Date.now(), jsonData)
       let msg = {}
       try {
         msg = JSON.parse(jsonData)
@@ -251,7 +250,6 @@ export default {
     sendOverDatachannel(printerId, msg) {
       if (this.printer && printerId == this.printer.id) {
         if (this.webrtc && this.webrtc.streaming) {
-      console.log('sendOverDatachannel', Date.now(), msg)
           this.webrtc.streaming.data({text: JSON.stringify(msg), success: () => {}})
         }
       }
