@@ -1,5 +1,10 @@
 <template>
   <div>
+    <navbar
+      view-name="printers"
+      ref="navbar"
+    ></navbar>
+
     <div class="row justify-content-center pt-5 pb-2">
       <div class="col-sm-12 col-lg-8 text-center">
         <h1>Upload Time-lapse</h1>
@@ -44,11 +49,13 @@
 import vue2Dropzone from 'vue2-dropzone'
 import 'vue2-dropzone/dist/vue2Dropzone.min.css'
 
+import Navbar from '@common/Navbar.vue'
   export default {
     name: 'UploadPrintPage',
 
     components: {
-      vueDropzone: vue2Dropzone
+      vueDropzone: vue2Dropzone,
+      Navbar,
     },
 
     props: {
