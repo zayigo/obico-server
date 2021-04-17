@@ -4,7 +4,7 @@ import time
 import json
 import datetime
 
-from channels.generic.websocket import JsonWebsocketConsumer, WebsocketConsumer
+from channels.generic.websocket import JsonWebsocketConsumer, WebsocketConsumer, AsyncWebsocketConsumer
 from django.conf import settings
 from asgiref.sync import async_to_sync
 import logging
@@ -87,26 +87,26 @@ class WebConsumer(JsonWebsocketConsumer):
         return self.scope['user']
 
 
-class OctoPrintConsumer(WebsocketConsumer):
+class OctoPrintConsumer(AsyncWebsocketConsumer):
     @newrelic.agent.background_task()
-    def connect(self):
-        self.anomaly_tracker = AnomalyTracker(now())
+    async def connect(self):
         self.group_name = channels.octo_group_name(self.current_printer().id)
 
         if self.current_printer().is_authenticated:
-            async_to_sync(self.channel_layer.group_add)(
+            LOGGER.warn(time.time())
+            await self.accept()
+            self.channel_layer.group_add(
                 self.group_name,
                 self.channel_name
             )
-            self.accept()
-            channels.broadcast_ws_connection_change(self.group_name)
-            # Send remote status to OctoPrint as soon as it connects
-            self.current_printer().send_should_watch_status(refresh=False)
-            channels.send_viewing_status(self.current_printer().id)
+            # channels.broadcast_ws_connection_change(self.group_name)
+            # # Send remote status to OctoPrint as soon as it connects
+            # self.current_printer().send_should_watch_status(refresh=False)
+            # channels.send_viewing_status(self.current_printer().id)
         else:
             self.close()
 
-    def disconnect(self, close_code):
+    async def disconnect(self, close_code):
         LOGGER.warn("OctoPrintConsumer: Closed websocket with code: {}".format(close_code))
         async_to_sync(self.channel_layer.group_discard)(
             self.group_name,
@@ -121,7 +121,7 @@ class OctoPrintConsumer(WebsocketConsumer):
         )
 
     @newrelic.agent.background_task()
-    def receive(self, text_data=None, bytes_data=None, **kwargs):
+    async def receive(self, text_data=None, bytes_data=None, **kwargs):
         channels.touch_channel(
             self.group_name,
             self.channel_name
